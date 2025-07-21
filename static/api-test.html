@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Status Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0069d9;
+        }
+        .test-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h2 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Status Test</h1>
+    
+    <div class="test-group">
+        <h2>1. Direct API Call</h2>
+        <p>Tests a direct call to the API status endpoint using the full URL.</p>
+        <button id="testDirectBtn">Test Direct API Call</button>
+        <div id="directResult" class="status"></div>
+    </div>
+    
+    <div class="test-group">
+        <h2>2. Relative API Call</h2>
+        <p>Tests a relative call to the API status endpoint.</p>
+        <button id="testRelativeBtn">Test Relative API Call</button>
+        <div id="relativeResult" class="status"></div>
+    </div>
+    
+    <div class="test-group">
+        <h2>3. CORS Test</h2>
+        <p>Tests if CORS is properly configured for cross-origin requests.</p>
+        <button id="testCorsBtn">Test CORS</button>
+        <div id="corsResult" class="status"></div>
+    </div>
+    
+    <div class="test-group">
+        <h2>4. Templates API Test</h2>
+        <p>Tests the templates API endpoint.</p>
+        <button id="testTemplatesBtn">Test Templates API</button>
+        <div id="templatesResult" class="status"></div>
+    </div>
+    
+    <script>
+        document.getElementById('testDirectBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('directResult');
+            resultDiv.innerHTML = 'Testing direct API call...';
+            resultDiv.className = 'status';
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>Success! API is working</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    resultDiv.className = 'status success';
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>Error: ${response.status}</h3>
+                        <p>${response.statusText}</p>
+                    `;
+                    resultDiv.className = 'status error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Error</h3>
+                    <p>${error.message}</p>
+                `;
+                resultDiv.className = 'status error';
+            }
+        });
+        
+        document.getElementById('testRelativeBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('relativeResult');
+            resultDiv.innerHTML = 'Testing relative API call...';
+            resultDiv.className = 'status';
+            
+            try {
+                const response = await fetch('/api/status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>Success! API is working</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    resultDiv.className = 'status success';
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>Error: ${response.status}</h3>
+                        <p>${response.statusText}</p>
+                    `;
+                    resultDiv.className = 'status error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Error</h3>
+                    <p>${error.message}</p>
+                `;
+                resultDiv.className = 'status error';
+            }
+        });
+        
+        document.getElementById('testCorsBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('corsResult');
+            resultDiv.innerHTML = 'Testing CORS...';
+            resultDiv.className = 'status';
+            
+            try {
+                // Create an iframe with a different origin
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = 'about:blank';
+                document.body.appendChild(iframe);
+                
+                // Try to make a request from the iframe
+                const script = document.createElement('script');
+                script.textContent = `
+                    fetch('http://localhost:8080/api/status')
+                        .then(response => response.json())
+                        .then(data => {
+                            window.parent.postMessage({
+                                type: 'cors-success',
+                                data: data
+                            }, '*');
+                        })
+                        .catch(error => {
+                            window.parent.postMessage({
+                                type: 'cors-error',
+                                error: error.message
+                            }, '*');
+                        });
+                `;
+                
+                // Add event listener for messages from the iframe
+                window.addEventListener('message', (event) => {
+                    if (event.data.type === 'cors-success') {
+                        resultDiv.innerHTML = `
+                            <h3>Success! CORS is properly configured</h3>
+                            <pre>${JSON.stringify(event.data.data, null, 2)}</pre>
+                        `;
+                        resultDiv.className = 'status success';
+                    } else if (event.data.type === 'cors-error') {
+                        resultDiv.innerHTML = `
+                            <h3>Error: CORS is not properly configured</h3>
+                            <p>${event.data.error}</p>
+                        `;
+                        resultDiv.className = 'status error';
+                    }
+                    
+                    // Clean up
+                    document.body.removeChild(iframe);
+                });
+                
+                // Add the script to the iframe
+                iframe.contentDocument.body.appendChild(script);
+                
+                // Set a timeout to handle the case where the iframe doesn't respond
+                setTimeout(() => {
+                    if (resultDiv.innerHTML === 'Testing CORS...') {
+                        resultDiv.innerHTML = `
+                            <h3>Error: CORS test timed out</h3>
+                            <p>The iframe did not respond within the timeout period.</p>
+                        `;
+                        resultDiv.className = 'status error';
+                        
+                        // Clean up
+                        document.body.removeChild(iframe);
+                    }
+                }, 5000);
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Error</h3>
+                    <p>${error.message}</p>
+                `;
+                resultDiv.className = 'status error';
+            }
+        });
+        
+        document.getElementById('testTemplatesBtn').addEventListener('click', async () => {
+            const resultDiv = document.getElementById('templatesResult');
+            resultDiv.innerHTML = 'Testing templates API...';
+            resultDiv.className = 'status';
+            
+            try {
+                // Try both direct and relative URLs
+                let response;
+                try {
+                    response = await fetch('/templates', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } catch (e) {
+                    console.log('Relative URL failed, trying direct URL');
+                    response = await fetch('http://localhost:8080/templates', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                }
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>Success! Templates API is working</h3>
+                        <p>Found ${data.templates ? data.templates.length : 0} templates</p>
+                        <pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>
+                    `;
+                    resultDiv.className = 'status success';
+                } else {
+                    resultDiv.innerHTML = `
+                        <h3>Error: ${response.status}</h3>
+                        <p>${response.statusText}</p>
+                    `;
+                    resultDiv.className = 'status error';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h3>Error</h3>
+                    <p>${error.message}</p>
+                `;
+                resultDiv.className = 'status error';
+            }
+        });
+    </script>
+</body>
+</html>

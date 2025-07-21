@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="file"], input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Test Tool</h1>
+    <p>This tool helps diagnose upload issues with the QuickCap API.</p>
+    
+    <div class="form-group">
+        <button id="checkStatus">Check Server Status</button>
+        <div id="statusResult" class="result"></div>
+    </div>
+    
+    <h2>Simple Test Upload</h2>
+    <form id="testUploadForm">
+        <div class="form-group">
+            <label for="testFile">Select File:</label>
+            <input type="file" id="testFile" name="file" required>
+        </div>
+        <div class="form-group">
+            <label for="testParam">Test Parameter:</label>
+            <input type="text" id="testParam" name="test_param" value="test">
+        </div>
+        <button type="submit">Test Upload</button>
+        <div class="progress-bar">
+            <div class="progress-fill" id="testProgress"></div>
+        </div>
+    </form>
+    <div id="testResult" class="result"></div>
+    
+    <h2>Full Upload Test</h2>
+    <form id="fullUploadForm">
+        <div class="form-group">
+            <label for="file">Select Video File:</label>
+            <input type="file" id="file" name="file" required>
+        </div>
+        <div class="form-group">
+            <label for="template">Template:</label>
+            <select id="template" name="template">
+                <option value="MrBeast">MrBeast</option>
+                <option value="Bold Green">Bold Green</option>
+                <option value="Minimal White">Minimal White</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="caption_position">Caption Position:</label>
+            <input type="number" id="caption_position" name="caption_position" value="0.7" step="0.1" min="0" max="1">
+        </div>
+        <div class="form-group">
+            <label for="font_size">Font Size:</label>
+            <input type="number" id="font_size" name="font_size" value="65" min="10" max="200">
+        </div>
+        <button type="submit">Upload Video</button>
+        <div class="progress-bar">
+            <div class="progress-fill" id="fullProgress"></div>
+        </div>
+    </form>
+    <div id="fullResult" class="result"></div>
+
+    <script>
+        // Check server status
+        document.getElementById('checkStatus').addEventListener('click', async () => {
+            const statusResult = document.getElementById('statusResult');
+            statusResult.innerHTML = 'Checking server status...';
+            
+            try {
+                const response = await fetch('/api/upload-status');
+                const data = await response.json();
+                
+                statusResult.innerHTML = `<span class="${data.status === 'ready' ? 'success' : 'error'}">
+                    Server Status: ${data.status}
+                </span>
+                <br>
+                <pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                statusResult.innerHTML = `<span class="error">Error checking status: ${error.message}</span>`;
+            }
+        });
+        
+        // Test upload form with progress tracking
+        document.getElementById('testUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const testResult = document.getElementById('testResult');
+            const progressBar = document.getElementById('testProgress');
+            testResult.innerHTML = 'Uploading test file...';
+            progressBar.style.width = '0%';
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('testFile');
+            const testParam = document.getElementById('testParam').value;
+            
+            if (!fileInput.files[0]) {
+                testResult.innerHTML = '<span class="error">Please select a file</span>';
+                return;
+            }
+            
+            formData.append('file', fileInput.files[0]);
+            formData.append('test_param', testParam);
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/test-upload', true);
+                
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                };
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        const data = JSON.parse(xhr.responseText);
+                        testResult.innerHTML = `<span class="success">Upload successful!</span>
+                        <br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    } else {
+                        testResult.innerHTML = `<span class="error">Upload failed with status: ${xhr.status}</span>
+                        <br>
+                        <pre>${xhr.responseText}</pre>`;
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    testResult.innerHTML = `<span class="error">Network error occurred</span>`;
+                };
+                
+                xhr.send(formData);
+            } catch (error) {
+                testResult.innerHTML = `<span class="error">Upload failed: ${error.message}</span>`;
+                console.error('Upload error:', error);
+            }
+        });
+        
+        // Full upload form with progress tracking
+        document.getElementById('fullUploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fullResult = document.getElementById('fullResult');
+            const progressBar = document.getElementById('fullProgress');
+            fullResult.innerHTML = 'Uploading video...';
+            progressBar.style.width = '0%';
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('file');
+            
+            if (!fileInput.files[0]) {
+                fullResult.innerHTML = '<span class="error">Please select a file</span>';
+                return;
+            }
+            
+            // Add all form fields to formData
+            formData.append('file', fileInput.files[0]);
+            formData.append('template', document.getElementById('template').value);
+            formData.append('caption_position', document.getElementById('caption_position').value);
+            formData.append('font_size', document.getElementById('font_size').value);
+            
+            // Add default values for required fields
+            formData.append('caption_layout', 'wrapped');
+            formData.append('track_speakers', 'false');
+            formData.append('enable_profanity_filter', 'false');
+            formData.append('profanity_filter_mode', 'both');
+            formData.append('custom_profanity_words', '');
+            formData.append('use_custom_transcription', 'false');
+            formData.append('custom_transcription', '');
+            formData.append('animation_type', 'none');
+            formData.append('animation_speed', '1.0');
+            formData.append('line_height', '1.2');
+            formData.append('word_spacing', '0');
+            formData.append('user_plan', 'free');
+            formData.append('trim_video', 'false');
+            formData.append('trim_start', '0.0');
+            formData.append('trim_end', '0.0');
+            formData.append('user_id', 'test_user');
+            formData.append('background_music', '');
+            formData.append('enable_emojis', 'false');
+            formData.append('emoji_density', '2');
+            formData.append('exact_word_timestamps', 'false');
+            formData.append('language', 'en');
+            formData.append('verbose', 'false');
+            formData.append('enable_translation', 'false');
+            formData.append('target_language', 'es');
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+                
+                xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable) {
+                        const percentComplete = (event.loaded / event.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                };
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        // Check if response is JSON or blob
+                        const contentType = xhr.getResponseHeader('Content-Type');
+                        if (contentType && contentType.includes('application/json')) {
+                            const data = JSON.parse(xhr.responseText);
+                            fullResult.innerHTML = `<span class="success">Upload successful! (JSON response)</span>
+                            <br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                        } else {
+                            // Create blob URL from response
+                            const blob = new Blob([xhr.response], { type: 'video/mp4' });
+                            const videoUrl = URL.createObjectURL(blob);
+                            
+                            fullResult.innerHTML = `<span class="success">Upload successful! (Video response)</span>
+                            <br>
+                            <video controls width="100%" src="${videoUrl}"></video>`;
+                        }
+                    } else {
+                        fullResult.innerHTML = `<span class="error">Upload failed with status: ${xhr.status}</span>
+                        <br>
+                        <pre>${xhr.responseText}</pre>`;
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    fullResult.innerHTML = `<span class="error">Network error occurred</span>`;
+                };
+                
+                xhr.send(formData);
+            } catch (error) {
+                fullResult.innerHTML = `<span class="error">Upload failed: ${error.message}</span>`;
+                console.error('Upload error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

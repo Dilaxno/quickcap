@@ -1,0 +1,40 @@
+[Unit]
+Description=QuickCap Backend API
+After=network.target
+
+[Service]
+Type=exec
+User=quickcap
+Group=quickcap
+WorkingDirectory=/opt/quickcap/backend
+Environment=PATH=/opt/quickcap/backend/venv/bin
+Environment=ENVIRONMENT=production
+Environment=NODE_ENV=production
+ExecStart=/opt/quickcap/backend/venv/bin/gunicorn --config gunicorn.conf.py app:app
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quickcap-backend
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/quickcap /tmp /var/run/quickcap
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

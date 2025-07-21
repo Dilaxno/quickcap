@@ -1,0 +1,65 @@
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+jinja2==3.1.2
+
+# AI/ML dependencies
+openai-whisper==20231117
+torch>=2.0.0
+torchaudio>=2.0.0
+numpy<2.0.0  # Required for pyannote.audio compatibility
+pyannote.audio==3.1.1
+ultralytics==8.1.2
+
+# Image processing
+Pillow>=9.0.0
+
+# Video processing
+moviepy>=1.0.3
+
+# Audio processing
+librosa>=0.10.0
+soundfile>=0.12.1
+
+# System utilities
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Authentication
+PyJWT==2.8.0
+cryptography==41.0.7  # Pinned to stable version for Windows compatibility
+passlib==1.7.4  # For password hashing (more reliable on Windows than bcrypt)
+
+# Database - REMOVED
+# psycopg2-binary==2.9.9
+
+# Cloud Storage (Cloudflare R2)
+boto3==1.34.34
+botocore==1.34.34
+
+# Firebase Integration - REMOVED
+# firebase-admin==6.4.0
+
+# Translation
+deep-translator>=1.11.4
+
+# AI Text Generation for Viral Titles using Microsoft Phi-3 Mini
+openai>=1.0.0
+httpx>=0.23.0,<1.0.0
+transformers>=4.37.0  # Updated for Phi-3 support
+torch>=2.0.0
+tokenizers>=0.15.0
+sentencepiece>=0.1.99
+protobuf>=4.21.0,<7.0.0
+importlib_metadata>=6.8.0
+accelerate>=0.25.0  # For efficient model loading
+einops>=0.7.0  # Required for Phi-3 model
+
+# Rate limiting
+slowapi==0.1.9
+
+# Development dependencies (optional)
+# pytest==7.4.3
+# black==23.11.0
+# flake8==6.1.0
